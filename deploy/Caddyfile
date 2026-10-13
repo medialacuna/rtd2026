@@ -1,0 +1,30 @@
+# RTD.MUAR — Caddy: статика фронта + прокси API/WS на backend.
+# HTTPS-сертификат Let's Encrypt выдаётся автоматически при первом запуске,
+# если DNS A-запись rtd.heartwins.ru уже указывает на 91.203.188.118.
+
+rtd.heartwins.ru {
+	encode gzip zstd
+	root * /srv
+	try_files {path} {path}/ /index.html
+	file_server
+
+	handle /api/* {
+		reverse_proxy backend:8000
+	}
+	handle /ws* {
+		reverse_proxy backend:8000
+	}
+	handle /health {
+		reverse_proxy backend:8000
+	}
+}
+
+# Если домен ещё не проброшен или нужен просто тест по IP — раскомментируй:
+# :80 {
+# 	encode gzip
+# 	root * /srv
+# 	try_files {path} {path}/ /index.html
+# 	file_server
+# 	handle /api/* { reverse_proxy backend:8000 }
+# 	handle /ws*   { reverse_proxy backend:8000 }
+# }

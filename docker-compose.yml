@@ -1,0 +1,72 @@
+# RTD.MUAR — один запуск: docker compose up -d
+# Требуется: Docker + Compose v2 на домашнем сервере (91.203.188.118)
+services:
+  backend:
+    build: ./backend
+    container_name: rtd-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: sqlite+aiosqlite:///./data_prod/rtd.db   # готовая база с 18 пьесами Комарово
+      REDIS_URL: redis://redis:6379/0
+      BASE_URL: https://rtd.heartwins.ru
+      OLLAMA_URL: ${OLLAMA_URL:-http://mock-ollama:11434}    # поставь llama на хосте и укажи http://host.docker.internal:11434 в .env
+      DATA_DIR: /srv/app/data
+      SECRET_KEY: ${SECRET_KEY:-change-me}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    volumes:
+      - ./data:/srv/app/data:ro            # разделы знаний + Комарово (для RAG/import)
+      - ./backend/data_prod:/srv/app/data_prod   # рабочая БД (в неё закоммитлен seed)
+    depends_on: [redis, mock-ollama]
+    networks: [rtd]
+
+  # Лёгкий Ollama-совместимый сервер для старта без GPU.
+  # Когда поставишь настоящую llama3.1 — удали этот сервис и поменяй OLLAMA_URL в .env.
+  mock-ollama:
+    build: ./backend
+    image: rtd-backend:latest
+    container_name: rtd-mock-ollama
+    restart: unless-stopped
+    command: ["python", "mock_ollama.py"]
+    networks: [rtd]
+
+  frontend:
+    image: caddy:2-alpine
+    container_name: rtd-frontend
+    restart: unless-stopped
+    volumes:
+      - ./frontend/dist:/srv:ro
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    ports: ["80:80", "443:443"]
+    depends_on: [backend]
+    networks: [rtd]
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: rtd-postgres
+    restart: unless-stopped
+    environment: { POSTGRES_USER: rtd, POSTGRES_PASSWORD: rtd, POSTGRES_DB: rtd }
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    networks: [rtd]
+
+  redis:
+    image: redis:7-alpine
+    container_name: rtd-redis
+    restart: unless-stopped
+    networks: [rtd]
+
+  # Опционально: Llama локально в контейнере (нужен GPU: --gpus all)
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: rtd-ollama
+  #   restart: unless-stopped
+  #   volumes: ["ollama:/root/.ollama"]
+  #   networks: [rtd]
+
+volumes: { pgdata: {}, ollama: {} }
+networks: { rtd: {} }

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#0a0a0c"/>
+  <g stroke="#d9b36c" stroke-width="10" opacity=".85">
+    <path d="M96 416 V96 M160 416 V96 M224 416 V96 M288 416 V96 M352 416 V96 M416 416 V96"/>
+  </g>
+  <g stroke="#7ee0c3" stroke-width="8" opacity=".7" transform="rotate(24 256 256)">
+    <path d="M96 416 V96 M160 416 V96 M224 416 V96 M288 416 V96 M352 416 V96 M416 416 V96"/>
+  </g>
+  <text x="256" y="300" font-family="Georgia,serif" font-size="120" fill="#f2f0ea" text-anchor="middle" font-weight="bold">M</text>
+</svg>
